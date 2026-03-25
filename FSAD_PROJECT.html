@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory System</title>
+    <style>
+        body { font-family: Arial; margin: 0; background: #f4f4f4; }
+
+        .container {
+            width: 300px;
+            margin: 100px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+        }
+
+        .hidden { display: none; }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th { background: #2c3e50; color: white; }
+
+        .page {
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="container">
+    <h2>Login</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+</div>
+
+<!-- HOME PAGE -->
+<div id="homePage" class="container hidden">
+    <h2>Welcome</h2>
+    <button onclick="showInventory()">Go to Inventory</button>
+    <button onclick="logout()">Logout</button>
+</div>
+
+<!-- INVENTORY PAGE -->
+<div id="inventoryPage" class="page hidden">
+    <h2>Inventory Management</h2>
+
+    <input type="text" id="itemName" placeholder="Item Name">
+    <input type="number" id="quantity" placeholder="Quantity">
+    <input type="number" id="price" placeholder="Price">
+    <button onclick="addItem()">Add Item</button>
+    <button onclick="goHome()">Back</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<script>
+let inventory = JSON.parse(localStorage.getItem("inventory")) || [];
+
+// LOGIN
+function login() {
+    let user = document.getElementById("username").value;
+    let pass = document.getElementById("password").value;
+
+    if(user === "admin" && pass === "1234") {
+        showPage("homePage");
+    } else {
+        alert("Invalid Login!");
+    }
+}
+
+// NAVIGATION
+function showPage(pageId) {
+    document.getElementById("loginPage").classList.add("hidden");
+    document.getElementById("homePage").classList.add("hidden");
+    document.getElementById("inventoryPage").classList.add("hidden");
+
+    document.getElementById(pageId).classList.remove("hidden");
+}
+
+function showInventory() {
+    showPage("inventoryPage");
+    displayItems();
+}
+
+function goHome() {
+    showPage("homePage");
+}
+
+function logout() {
+    showPage("loginPage");
+}
+
+// INVENTORY FUNCTIONS
+function addItem() {
+    let name = document.getElementById("itemName").value;
+    let qty = document.getElementById("quantity").value;
+    let price = document.getElementById("price").value;
+
+    if(name === "" || qty === "" || price === "") {
+        alert("Fill all fields!");
+        return;
+    }
+
+    inventory.push({name, qty, price});
+    localStorage.setItem("inventory", JSON.stringify(inventory));
+
+    displayItems();
+
+    document.getElementById("itemName").value = "";
+    document.getElementById("quantity").value = "";
+    document.getElementById("price").value = "";
+}
+
+function displayItems() {
+    let table = document.getElementById("tableBody");
+    table.innerHTML = "";
+
+    inventory.forEach((item, index) => {
+        table.innerHTML += `
+            <tr>
+                <td>${item.name}</td>
+                <td>${item.qty}</td>
+                <td>${item.price}</td>
+                <td><button onclick="deleteItem(${index})">Delete</button></td>
+            </tr>
+        `;
+    });
+}
+
+function deleteItem(index) {
+    inventory.splice(index, 1);
+    localStorage.setItem("inventory", JSON.stringify(inventory));
+    displayItems();
+}
+</script>
+
+</body>
+</html>
