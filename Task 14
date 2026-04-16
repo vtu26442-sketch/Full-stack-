@@ -1,0 +1,96 @@
+import java.util.*;
+
+// ---------------------- USER SERVICE ----------------------
+class UserService {
+    public String getUser(int id) {
+        return "User-" + id;
+    }
+}
+
+// ---------------------- ORDER SERVICE ----------------------
+class OrderService {
+
+    // Loose coupling (dependency)
+    private UserService userService;
+
+    public OrderService(UserService userService) {
+        this.userService = userService;
+    }
+
+    // REST-like method
+    public String placeOrder(int userId, String product) {
+        try {
+            String user = userService.getUser(userId);
+            return "Order placed by " + user + " for " + product;
+        } catch (Exception e) {
+            return "Order failed";
+        }
+    }
+}
+
+// ---------------------- API GATEWAY ----------------------
+class ApiGateway {
+
+    private UserService userService = new UserService();
+    private OrderService orderService = new OrderService(userService);
+
+    public String handleRequest(String path) {
+
+        // Routing logic
+        if (path.startsWith("/user")) {
+            int id = Integer.parseInt(path.split("/")[2]);
+            return userService.getUser(id);
+        }
+
+        if (path.startsWith("/order")) {
+            String[] parts = path.split("/");
+            int userId = Integer.parseInt(parts[2]);
+            String product = parts[3];
+            return orderService.placeOrder(userId, product);
+        }
+
+        return "Invalid request";
+    }
+}
+
+// ---------------------- FRONTEND SIMULATION ----------------------
+class Frontend {
+    private ApiGateway gateway = new ApiGateway();
+
+    public void placeOrderUI(int userId, String product) {
+        String url = "/order/" + userId + "/" + product;
+
+        // Simulating HTTP call
+        String response = gateway.handleRequest(url);
+
+        System.out.println("Frontend Response: " + response);
+    }
+}
+
+// ---------------------- UNIT TEST ----------------------
+class TestCases {
+    public static void run() {
+        UserService us = new UserService();
+        assert us.getUser(1).equals("User-1");
+
+        OrderService os = new OrderService(us);
+        String result = os.placeOrder(1, "Laptop");
+        assert result.contains("Order placed");
+
+        System.out.println("All tests passed!");
+    }
+}
+
+// ---------------------- MAIN ----------------------
+public class MicroservicesFullStackSingleFile {
+
+    public static void main(String[] args) {
+
+        // Simulate frontend request
+        Frontend ui = new Frontend();
+        ui.placeOrderUI(1, "Laptop");
+
+        // Run tests
+        TestCases.run();
+    }
+}
