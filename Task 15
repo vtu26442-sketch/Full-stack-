@@ -1,0 +1,117 @@
+import java.util.*;
+
+// ---------------------- SERVICE REGISTRY (EUREKA SIMULATION) ----------------------
+class ServiceRegistry {
+
+    // Map<ServiceName, List of Instances>
+    private static Map<String, List<String>> registry = new HashMap<>();
+
+    // Register service
+    public static void register(String serviceName, String instance) {
+        registry.computeIfAbsent(serviceName, k -> new ArrayList<>()).add(instance);
+        System.out.println(serviceName + " registered: " + instance);
+    }
+
+    // Discover service (Dynamic lookup)
+    public static String discover(String serviceName) {
+        List<String> instances = registry.get(serviceName);
+
+        if (instances == null || instances.isEmpty()) {
+            return null;
+        }
+
+        // Load balancing (Random)
+        return instances.get(new Random().nextInt(instances.size()));
+    }
+}
+
+// ---------------------- USER SERVICE ----------------------
+class UserService {
+
+    private String instanceName;
+
+    public UserService(String instanceName) {
+        this.instanceName = instanceName;
+
+        // Register with registry
+        ServiceRegistry.register("USER-SERVICE", instanceName);
+    }
+
+    public String getUser(int id) {
+        return instanceName + " -> User-" + id;
+    }
+}
+
+// ---------------------- ORDER SERVICE ----------------------
+class OrderService {
+
+    private String instanceName;
+
+    public OrderService(String instanceName) {
+        this.instanceName = instanceName;
+
+        // Register with registry
+        ServiceRegistry.register("ORDER-SERVICE", instanceName);
+    }
+
+    public String placeOrder(int userId, String product) {
+
+        // Discover USER-SERVICE dynamically (Task 15)
+        String userServiceInstance = ServiceRegistry.discover("USER-SERVICE");
+
+        if (userServiceInstance == null) {
+            return "User Service not available";
+        }
+
+        // Simulated REST call
+        String user = userServiceInstance + " -> User-" + userId;
+
+        return instanceName + " processed order: " + user + " bought " + product;
+    }
+}
+
+// ---------------------- API GATEWAY ----------------------
+class ApiGateway {
+
+    public String route(String path) {
+
+        if (path.startsWith("/order")) {
+
+            String[] parts = path.split("/");
+            int userId = Integer.parseInt(parts[2]);
+            String product = parts[3];
+
+            // Discover ORDER-SERVICE dynamically
+            String orderInstance = ServiceRegistry.discover("ORDER-SERVICE");
+
+            if (orderInstance == null) {
+                return "Order Service not available";
+            }
+
+            OrderService os = new OrderService(orderInstance);
+            return os.placeOrder(userId, product);
+        }
+
+        return "Invalid request";
+    }
+}
+
+// ---------------------- MAIN ----------------------
+public class Task15_ServiceRegistryDemo {
+
+    public static void main(String[] args) {
+
+        // Register multiple instances (like Eureka)
+        new UserService("UserService-Instance1");
+        new UserService("UserService-Instance2");
+
+        new OrderService("OrderService-Instance1");
+        new OrderService("OrderService-Instance2");
+
+        // API Gateway request
+        ApiGateway gateway = new ApiGateway();
+
+        String response = gateway.route("/order/1/Laptop");
+        System.out.println("\nResponse: " + response);
+    }
+}
